@@ -272,7 +272,7 @@ def build_user_configs(uid, host):
     for i, addr in enumerate(addrs, 1):
         link = (
             f"vless://{uid}@{addr}:443"
-            f"?encryption=none&security=tls&sni={sni}&fp=chrome"
+            f"?encryption=none&security=tls&sni={sni}&fp=chrome&allowInsecure=1"
             f"&type=httpupgrade&host={host}&path={epath}&alpn=http%2F1.1"
             f"#{quote(info['name'])}-{i}"
         )
@@ -284,99 +284,172 @@ def build_user_configs(uid, host):
 # Panel
 # ------------------------------------------------------------------------------
 
-LOGIN_HTML = """<!doctype html><html><head><meta charset=utf-8>
+LOGIN_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<title>praxi</title><style>
-body{font-family:system-ui;background:#0b0e14;color:#e6e6e6;display:flex;
-height:100vh;align-items:center;justify-content:center;margin:0}
-.box{background:#151a23;padding:2rem;border-radius:12px;width:280px}
-input,button{width:100%;padding:.7rem;margin:.4rem 0;border-radius:8px;
-border:1px solid #2a3140;background:#0b0e14;color:#e6e6e6;box-sizing:border-box}
-button{background:#3b82f6;border:0;cursor:pointer;font-weight:600}
-h2{margin:0 0 1rem}</style></head><body>
-<div class=box><h2>praxiServer</h2>
-<input id=p type=password placeholder=Password>
-<button onclick=login()>Login</button>
-<div id=e style=color:#f87171;font-size:.85rem></div></div>
+<title>praxiServer</title><style>
+:root{--bg:#0a0c11;--card:#141922;--bd:#232b38;--fg:#e8ecf2;--mut:#8b98ab;
+--acc:#4f8cff;--acc2:#7c5cff;--err:#ff6b6b}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;
+min-height:100vh;display:flex;align-items:center;justify-content:center;
+background:radial-gradient(1200px 600px at 50% -10%,#16203a 0%,var(--bg) 60%);
+color:var(--fg)}
+.box{background:var(--card);border:1px solid var(--bd);padding:2.2rem;
+border-radius:16px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.logo{font-size:1.5rem;font-weight:700;margin:0 0 .3rem;
+background:linear-gradient(90deg,var(--acc),var(--acc2));
+-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);font-size:.85rem;margin:0 0 1.4rem}
+label{font-size:.8rem;color:var(--mut);display:block;margin:0 0 .3rem}
+input{width:100%;padding:.75rem .9rem;border-radius:10px;border:1px solid var(--bd);
+background:#0c0f15;color:var(--fg);font-size:.95rem;outline:none;transition:.15s}
+input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(79,140,255,.15)}
+button{width:100%;padding:.8rem;margin-top:1rem;border-radius:10px;border:0;
+cursor:pointer;font-weight:600;font-size:.95rem;color:#fff;
+background:linear-gradient(90deg,var(--acc),var(--acc2));transition:.15s}
+button:hover{filter:brightness(1.1)}button:active{transform:translateY(1px)}
+.err{color:var(--err);font-size:.82rem;margin-top:.7rem;min-height:1rem;text-align:center}
+</style></head><body>
+<div class=box>
+ <h1 class=logo>praxiServer</h1>
+ <p class=sub>Sign in to your panel</p>
+ <label for=p>Password</label>
+ <input id=p type=password placeholder="••••••••" autocomplete=current-password>
+ <button onclick=login()>Sign in</button>
+ <div id=e class=err></div>
+</div>
 <script>
 async function login(){
+ const e=document.getElementById('e');e.textContent='';
  const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({password:document.getElementById('p').value})});
- if(r.ok){location.href='/panel'}else{document.getElementById('e').textContent='Wrong password'}
+ if(r.ok){location.href='/panel'}else{e.textContent='Wrong password'}
 }
 document.getElementById('p').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+document.getElementById('p').focus();
 </script></body></html>"""
 
-PANEL_HTML = """<!doctype html><html><head><meta charset=utf-8>
+PANEL_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<title>praxi panel</title><style>
-body{font-family:system-ui;background:#0b0e14;color:#e6e6e6;margin:0;padding:1rem;max-width:900px;margin:auto}
-h1{font-size:1.3rem}h3{margin-top:1.6rem}
-.card{background:#151a23;padding:1rem;border-radius:12px;margin:.6rem 0}
-input,button{padding:.55rem;border-radius:8px;border:1px solid #2a3140;background:#0b0e14;color:#e6e6e6}
-button{background:#3b82f6;border:0;cursor:pointer;font-weight:600}
-button.d{background:#ef4444}button.g{background:#22c55e}
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-td,th{text-align:left;padding:.4rem;border-bottom:1px solid #222a37;word-break:break-all}
-.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
-small{color:#8b98ab}code{color:#93c5fd}
+<title>praxiServer · panel</title><style>
+:root{--bg:#0a0c11;--card:#141922;--card2:#0f131b;--bd:#232b38;--fg:#e8ecf2;
+--mut:#8b98ab;--acc:#4f8cff;--acc2:#7c5cff;--grn:#2ecc71;--red:#ff5c5c}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;
+background:radial-gradient(1200px 500px at 100% -10%,#16203a 0%,var(--bg) 55%);
+color:var(--fg);min-height:100vh}
+.wrap{max-width:860px;margin:0 auto;padding:1.2rem}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem}
+.logo{font-size:1.35rem;font-weight:700;margin:0;
+background:linear-gradient(90deg,var(--acc),var(--acc2));
+-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;
+padding:1.2rem;margin-bottom:1rem;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.card h3{margin:0 0 .2rem;font-size:1rem}
+.card p{margin:0 0 .9rem;color:var(--mut);font-size:.82rem}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+input{flex:1;min-width:0;padding:.7rem .85rem;border-radius:10px;border:1px solid var(--bd);
+background:var(--card2);color:var(--fg);font-size:.9rem;outline:none;transition:.15s}
+input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(79,140,255,.15)}
+button{padding:.7rem 1rem;border-radius:10px;border:0;cursor:pointer;font-weight:600;
+font-size:.85rem;color:#fff;background:#2a3444;transition:.15s;white-space:nowrap}
+button:hover{filter:brightness(1.15)}button:active{transform:translateY(1px)}
+.b-acc{background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.b-grn{background:var(--grn)}.b-red{background:var(--red)}
+.b-ghost{background:transparent;border:1px solid var(--bd);color:var(--mut)}
+.chip{display:flex;align-items:center;justify-content:space-between;gap:.5rem;
+background:var(--card2);border:1px solid var(--bd);border-radius:10px;
+padding:.55rem .8rem;margin-top:.5rem}
+.chip code{color:#9cc4ff;font-size:.85rem;word-break:break-all}
+.empty{color:var(--mut);font-size:.85rem;margin-top:.5rem}
+.user{display:flex;align-items:center;justify-content:space-between;gap:.6rem;
+padding:.7rem 0;border-top:1px solid var(--bd)}
+.user:first-child{border-top:0}
+.uname{font-weight:600}.uuid{color:var(--mut);font-size:.72rem;word-break:break-all}
+.uacts{display:flex;gap:.4rem;flex-shrink:0}
+.iconbtn{padding:.5rem .7rem;font-size:.78rem}
+#toast{position:fixed;left:50%;bottom:1.3rem;transform:translateX(-50%) translateY(120%);
+background:var(--grn);color:#04210f;padding:.7rem 1.2rem;border-radius:10px;
+font-weight:600;font-size:.85rem;transition:.25s;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:9}
+#toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:520px){.user{flex-direction:column;align-items:flex-start}}
 </style></head><body>
-<div class=row style=justify-content:space-between>
- <h1>praxiServer</h1><button class=d onclick="fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login')">Logout</button>
-</div>
+<div class=wrap>
+ <header>
+  <h1 class=logo>praxiServer</h1>
+  <button class=b-ghost onclick=logout()>Logout</button>
+ </header>
 
-<div class=card><h3>Bug SNI</h3>
- <small>Domain your ISP lets through. Empty = use server host.</small>
- <div class=row style=margin-top:.5rem>
-  <input id=sni placeholder="your.bug.host" style=flex:1>
-  <button class=g onclick=saveSni()>Save</button>
+ <div class=card>
+  <h3>Bug SNI</h3>
+  <p>Domain your ISP lets through. Leave empty to use the server host.</p>
+  <div class=row>
+   <input id=sni placeholder="your.bug.host">
+   <button class=b-grn onclick=saveSni()>Save</button>
+  </div>
+ </div>
+
+ <div class=card>
+  <h3>Clean IPs / addresses</h3>
+  <p>Extra addresses to generate alternative configs (optional).</p>
+  <div class=row>
+   <input id=addr placeholder="104.21.x.x or a domain">
+   <button class=b-grn onclick=addAddr()>Add</button>
+  </div>
+  <div id=addrs></div>
+ </div>
+
+ <div class=card>
+  <h3>Users</h3>
+  <p>Each user gets a subscription link with all configs.</p>
+  <div class=row>
+   <input id=uname placeholder="user name">
+   <button class=b-acc onclick=addUser()>+ Add user</button>
+  </div>
+  <div id=users style=margin-top:.6rem></div>
  </div>
 </div>
-
-<div class=card><h3>Clean IPs / addresses</h3>
- <div class=row style=margin-bottom:.5rem>
-  <input id=addr placeholder="104.21.x.x or domain" style=flex:1>
-  <button class=g onclick=addAddr()>Add</button>
- </div>
- <div id=addrs></div>
-</div>
-
-<div class=card><h3>Users</h3>
- <div class=row style=margin-bottom:.5rem>
-  <input id=uname placeholder="name" style=flex:1>
-  <button class=g onclick=addUser()>+ Add user</button>
- </div>
- <table><thead><tr><th>Name</th><th>Sub link</th><th></th></tr></thead>
- <tbody id=users></tbody></table>
-</div>
+<div id=toast></div>
 
 <script>
 const j=(u,o)=>fetch(u,o).then(r=>r.json());
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){const t=document.getElementById('toast');t.textContent=m;
+ t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800)}
+function copy(u){navigator.clipboard.writeText(u).then(()=>toast('Copied ✓'))}
 async function load(){
  const s=await j('/api/settings');document.getElementById('sni').value=s.sni||'';
  const a=await j('/api/addresses');
- document.getElementById('addrs').innerHTML=a.map((x,i)=>
-  `<div class=row style=justify-content:space-between><code>${x}</code>
-   <button class=d onclick=delAddr(${i})>x</button></div>`).join('')||'<small>none</small>';
+ document.getElementById('addrs').innerHTML=a.length?a.map((x,i)=>
+  `<div class=chip><code>${esc(x)}</code>
+   <button class="b-red iconbtn" onclick=delAddr(${i})>Remove</button></div>`).join(''):
+  '<div class=empty>No extra addresses.</div>';
  const u=await j('/api/links');
- document.getElementById('users').innerHTML=u.map(x=>
-  `<tr><td>${x.name}</td>
-   <td><code>${location.origin}/sub/${x.uuid}</code></td>
-   <td><button onclick="navigator.clipboard.writeText(location.origin+'/sub/${x.uuid}')">copy</button>
-   <button class=d onclick="delUser('${x.uuid}')">del</button></td></tr>`).join('');
+ document.getElementById('users').innerHTML=u.length?u.map(x=>{
+  const sub=location.origin+'/sub/'+x.uuid;
+  return `<div class=user><div style=min-width:0>
+   <div class=uname>${esc(x.name)}</div><div class=uuid>${sub}</div></div>
+   <div class=uacts>
+    <button class="b-acc iconbtn" onclick="copy('${sub}')">Copy sub</button>
+    <button class="b-red iconbtn" onclick="delUser('${x.uuid}')">Delete</button>
+   </div></div>`}).join(''):'<div class=empty>No users yet.</div>';
 }
 async function saveSni(){await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
- body:JSON.stringify({sni:document.getElementById('sni').value.trim()})});load()}
-async function addAddr(){const v=document.getElementById('addr').value.trim();if(!v)return;
+ body:JSON.stringify({sni:document.getElementById('sni').value.trim()})});toast('Saved ✓');load()}
+async function addAddr(){const el=document.getElementById('addr');const v=el.value.trim();if(!v)return;
  await fetch('/api/addresses',{method:'POST',headers:{'Content-Type':'application/json'},
- body:JSON.stringify({addr:v})});document.getElementById('addr').value='';load()}
+ body:JSON.stringify({addr:v})});el.value='';load()}
 async function delAddr(i){await fetch('/api/addresses',{method:'DELETE',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({index:i})});load()}
-async function addUser(){const v=document.getElementById('uname').value.trim()||'user';
+async function addUser(){const el=document.getElementById('uname');const v=el.value.trim()||'user';
  await fetch('/api/links',{method:'POST',headers:{'Content-Type':'application/json'},
- body:JSON.stringify({name:v})});document.getElementById('uname').value='';load()}
-async function delUser(u){await fetch('/api/links',{method:'DELETE',headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({name:v})});el.value='';load()}
+async function delUser(u){if(!confirm('Delete this user?'))return;
+ await fetch('/api/links',{method:'DELETE',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({uuid:u})});load()}
+function logout(){fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login')}
+document.getElementById('uname').addEventListener('keydown',e=>{if(e.key==='Enter')addUser()});
+document.getElementById('addr').addEventListener('keydown',e=>{if(e.key==='Enter')addAddr()});
 load();
 </script></body></html>"""
 
@@ -489,8 +562,34 @@ async def handle_conn(reader, writer):
         _safe_close(writer)
 
 
+async def keepalive():
+    """Ping the public URL every 5 min so free hosts don't spin down.
+
+    On Railway the public domain is auto-detected from RAILWAY_PUBLIC_DOMAIN.
+    Otherwise set KEEPALIVE_URL to your public https URL.
+    """
+    import urllib.request
+    domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
+    url = os.environ.get("KEEPALIVE_URL", "").strip()
+    if not url and domain:
+        url = f"https://{domain}/health"
+    if not url:
+        print("keep-alive: disabled (set KEEPALIVE_URL to enable)")
+        return
+    print(f"keep-alive: pinging {url} every 5 min")
+    loop = asyncio.get_event_loop()
+    while True:
+        await asyncio.sleep(300)
+        try:
+            await loop.run_in_executor(
+                None, lambda: urllib.request.urlopen(url, timeout=15).read())
+        except Exception:
+            pass
+
+
 async def main():
     _seed_default_user()
+    asyncio.create_task(keepalive())
     server = await asyncio.start_server(handle_conn, "0.0.0.0", PORT)
     print(f"praxiServer listening on 0.0.0.0:{PORT}  path={WS_PATH}")
     async with server:
